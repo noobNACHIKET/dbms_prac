@@ -1,0 +1,111 @@
+-- Create tables
+create database company;
+use company;
+CREATE TABLE Department (
+    DepartmentID INT PRIMARY KEY,
+    DepartmentName VARCHAR(50)
+);
+
+CREATE TABLE Employee (
+    EmployeeID INT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    DepartmentID INT,
+    FOREIGN KEY (DepartmentID) REFERENCES Department(DepartmentID)
+);
+
+CREATE TABLE Project (
+    ProjectID INT PRIMARY KEY,
+    ProjectName VARCHAR(50),
+    DepartmentID INT,
+    FOREIGN KEY (DepartmentID) REFERENCES Department(DepartmentID)
+);
+-- Insert sample data
+INSERT INTO Department (DepartmentID, DepartmentName) VALUES (1, 'IT');
+INSERT INTO Department (DepartmentID, DepartmentName) VALUES (2, 'HR');
+
+INSERT INTO Employee (EmployeeID, FirstName, LastName, DepartmentID) VALUES (1, 'John', 'Doe', 1);
+INSERT INTO Employee (EmployeeID, FirstName, LastName, DepartmentID) VALUES (2, 'Jane', 'Smith', 2);
+
+INSERT INTO Project (ProjectID, ProjectName, DepartmentID) VALUES (101, 'ProjectA', 1);
+INSERT INTO Project (ProjectID, ProjectName, DepartmentID) VALUES (102, 'ProjectB', 2);
+
+-- DML Queries
+SELECT * FROM Employee WHERE FirstName LIKE 'John%';
+-- Aggregate functions
+SELECT AVG(EmployeeID) AS AvgEmployeeID FROM Employee;
+SELECT COUNT(*) AS EmployeeCount FROM Employee;
+SELECT SUM(EmployeeID) AS TotalEmployeeID FROM Employee;
+
+-- Date/Time functions
+SELECT NOW() AS CurrentDateTime;
+SELECT DAYOFMONTH(NOW()) AS CurrentDayOfMonth;
+-- Nested Subqueries
+SELECT * FROM Employee WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = 'IT');
+-- Add InsertTimestamp column to Employee table
+ALTER TABLE Employee
+ADD COLUMN InsertTimestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+-- Trigger (Update timestamp on Employee insert)
+DELIMITER //
+CREATE TRIGGER before_employee_insert
+BEFORE INSERT ON Employee
+FOR EACH ROW
+SET NEW.InsertTimestamp = NOW();
+//
+DELIMITER ;
+
+-- Stored Procedure
+DELIMITER //
+CREATE PROCEDURE UpdateEmployeeName(IN employee_id INT, IN new_name VARCHAR(50))
+BEGIN
+    UPDATE Employee SET FirstName = new_name WHERE EmployeeID = employee_id;
+END;
+//
+DELIMITER ;
+
+-- Function
+DELIMITER //
+CREATE FUNCTION GetEmployeeCount() RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE count INT;
+    SELECT COUNT(*) INTO count FROM Employee;
+    RETURN count;
+END;
+//
+DELIMITER ;
+-- Cursors
+DELIMITER //
+
+DECLARE employee_cursor CURSOR FOR SELECT * FROM Employee;
+DECLARE done BOOLEAN DEFAULT FALSE;
+DECLARE emp_id INT;
+DECLARE emp_name VARCHAR(50);
+
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+OPEN employee_cursor;
+
+employee_loop: LOOP
+    FETCH employee_cursor INTO emp_id, emp_name;
+    IF done THEN
+        LEAVE employee_loop;
+    END IF;
+
+    -- Process data (perform actions as needed)
+    -- ...
+
+END LOOP;
+
+CLOSE employee_cursor;
+DELIMITER ;
+-- Views
+CREATE VIEW EmployeeView AS
+SELECT EmployeeID, FirstName, LastName, DepartmentName
+FROM Employee
+JOIN Department ON Employee.DepartmentID = Department.DepartmentID;
+
+-- Try to update the base table using its corresponding view
+-- Note: Some databases may have restrictions on updatable views
+UPDATE EmployeeView SET FirstName = 'NewJohn' WHERE EmployeeID = 1;
